@@ -133,10 +133,74 @@ def get_recommataions(prefs, person, similarity=sim_person):
 
 
 def transform_prefs(prefs):
-    result={}
+    result = {}
     for person in prefs:
         for item in prefs[person]:
             result.setdefault(item, {})
             result[item][person] = prefs[person][item]
 
     return result
+
+
+def calculate_similar_items(prefs, n=10):
+    # 가장 유사한항목들을가진 항목 딕셔너리를 생성
+    result = {}
+
+    # 선호도 행렬을 뒤집어 항목 중심 행렬로 변경
+    item_prefs = transform_prefs(prefs)
+
+    c = 0
+    for item in item_prefs:
+        # 큰 데이터 세트를 위해 진척 상태를 갱신
+        c += 1
+        if c % 100 == 0:
+            print("%d/%d", c, len(item_prefs))
+
+        # 각항목과 가장 유사한 항목들을 구함
+        scores = top_matches(item_prefs, item, n, sim_distance)
+        result[item] = scores
+
+    return result
+
+
+def get_recommended_items(prefs, itemMatch, user):
+    user_ratings = prefs[user]
+    scores = {}
+    total_sim = {}
+    # 이 사용자가 평가한 모든 항목마다 루프를 돈다.
+    for (item, rating) in user_ratings.items():
+
+        # 이항목과 유사한 모든 항목마다 루프를 돈다.
+        for (similarity, item2) in itemMatch[item]:
+
+            # 이미사용자가 항목을 평가했다면 무시한다.
+            if item2 in user_ratings: continue
+            # 유사도와 평가점수 곱의가중치 합을 계산
+            scores.setdefault(item2, 0)
+            scores[item2] += similarity * rating
+            # 모든 유사도 합을 계산
+            total_sim.setdefault(item2, 0)
+            total_sim[item2] += similarity
+
+    # 평균값을 얻기 위해 합계를 가중치 합계로 나눔
+    rankings = [(score / total_sim[item], item) for item, score in scores.items()]
+
+    # 최고값에서 최저값으로 랭킹을 리턴함.
+    rankings.sort()
+    rankings.reverse()
+    return rankings
+
+
+def load_movie_lens(path='movielens/'):
+    movies = {}
+    for line in open(path + "item.data", encoding='utf-8'):
+        (m_id, m_title) = line.split('|')[0:2]
+        movies[m_id] = m_title
+
+    prefs = {}
+    for line in open(path + "rating.data", encoding='utf-8'):
+        (user, m_id, rating, ts) = line.split('\t')
+        prefs.setdefault(user, {})
+        prefs[user][movies[m_id]] = float(rating)
+
+    return prefs
