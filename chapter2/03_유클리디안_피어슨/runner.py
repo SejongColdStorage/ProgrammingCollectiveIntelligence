@@ -8,7 +8,7 @@ from chapter2 import recommendations
 print(recommendations.sim_distance(recommendations.critics, 'Lisa Rose', 'Gene Seymour'))
 
 # 피어슨 결과...
-print(recommendations.sim_person(recommendations.critics, 'Lisa Rose', 'Gene Seymour'))
+print(recommendations.sim_pearson(recommendations.critics, 'Lisa Rose', 'Gene Seymour'))
 
 # 평론가 순위 매기기
 print(recommendations.top_matches(recommendations.critics, 'Toby'))

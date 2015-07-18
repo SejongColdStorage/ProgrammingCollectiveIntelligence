@@ -52,7 +52,7 @@ def sim_distance(prefs, person1, person2):
 
 
 # p1과 p2에대한 피어슨 상관계수를 리턴
-def sim_person(prefs, p1, p2):
+def sim_pearson(prefs, p1, p2):
     # 같이 평가한 항목들의 목록을 구함
     si = {}
     for item in prefs[p1]:
@@ -88,7 +88,7 @@ def sim_person(prefs, p1, p2):
     return r
 
 
-def top_matches(prefs, person, n=5, similarity=sim_person):
+def top_matches(prefs, person, n=5, similarity=sim_pearson):
     scores = [(similarity(prefs, person, other), other) for other in prefs if other != person]
 
     scores.sort()
@@ -97,7 +97,7 @@ def top_matches(prefs, person, n=5, similarity=sim_person):
     return scores[0:n]
 
 
-def get_recommataions(prefs, person, similarity=sim_person):
+def get_recommataions(prefs, person, similarity=sim_pearson):
     totals = {}
     sim_sums = {}
 
@@ -174,7 +174,8 @@ def get_recommended_items(prefs, itemMatch, user):
         for (similarity, item2) in itemMatch[item]:
 
             # 이미사용자가 항목을 평가했다면 무시한다.
-            if item2 in user_ratings: continue
+            if item2 in user_ratings:
+                continue
             # 유사도와 평가점수 곱의가중치 합을 계산
             scores.setdefault(item2, 0)
             scores[item2] += similarity * rating
@@ -193,14 +194,32 @@ def get_recommended_items(prefs, itemMatch, user):
 
 def load_movie_lens(path='movielens/'):
     movies = {}
-    for line in open(path + "item.data", encoding='utf-8'):
+    for line in open(path + "item.data"):
         (m_id, m_title) = line.split('|')[0:2]
         movies[m_id] = m_title
 
     prefs = {}
-    for line in open(path + "rating.data", encoding='utf-8'):
+    for line in open(path + "rating.data"):
         (user, m_id, rating, ts) = line.split('\t')
         prefs.setdefault(user, {})
         prefs[user][movies[m_id]] = float(rating)
 
     return prefs
+
+
+# 숙제 3번... 유저 유사도 측정.
+def calculate_similar_user(prefs, n=10):
+    # 가장 유사한항목들을가진 항목 딕셔너리를 생성
+    result = {}
+    c = 0
+    for user in prefs:
+        # 큰 데이터 세트를 위해 진척 상태를 갱신
+        c += 1
+        if c % 100 == 0:
+            print("%d/%d", c, len(prefs))
+
+        # 각항목과 가장 유사한 항목들을 구함
+        scores = top_matches(prefs, user, n, sim_distance)
+        result[user] = scores
+
+    return result
